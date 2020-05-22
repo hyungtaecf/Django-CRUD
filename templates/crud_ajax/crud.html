@@ -21,32 +21,39 @@
           </div>
           <button class="btn btn-primary form-control" type="submit">SUBMIT</button>
         </form>
+        <button type="button" id="prev" onClick="showPrevious()">PREVIOUS</button>
+        <button type="button" id="next" onClick="showNext()">NEXT</button>
       </div>
       <div class="col-md-8">
         <h3>USERS</h3>
         <table id="userTable" class="table table-striped">
+          <thead>
           <tr>
             <th>Name</th>
             <th>Address</th>
             <th colspan="3">Age</th>
           </tr>
+        </thead>
+        <tbody>
           {% if users %}
-          {% for user in users %}
-          <tr id="user-{{user.id}}">
-              <td class="userName userData" name="name">{{user.name}}</td>
-              <td class="userAddress userData" name="address">{{user.address}}</td>
-              <td class="userAge userData" name="age">{{user.age}}</td>
-              <td align="center">
-                  <button class="btn btn-success form-control" onClick="editUser({{user.id}})" data-toggle="modal" data-target="#myModal">EDIT</button>
-              </td>
-              <td align="center">
-                  <button class="btn btn-danger form-control" onClick="deleteUser({{user.id}})">DELETE</button>
-              </td>
-          </tr>
+            {% for user in users %}
+            <tr id="user-{{user.id}}">
+                <td class="userName userData" name="name">{{user.name}}</td>
+                <td class="userAddress userData" name="address">{{user.address}}</td>
+                <td class="userAge userData" name="age">{{user.age}}</td>
+                <td align="center">
+                    <button class="btn btn-success form-control" onClick="editUser({{user.id}})" data-toggle="modal" data-target="#myModal">EDIT</button>
+                </td>
+                <td align="center">
+                    <button class="btn btn-danger form-control" onClick="deleteUser({{user.id}})">DELETE</button>
+                </td>
+            </tr>
+
           {% endfor %}
           {% else %}
             No Users
           {% endif %}
+        </tbody>
         </table>
       </div>
     </div>
@@ -196,5 +203,58 @@ function deleteUser(id) {
     });
   }
 }
+// Retrieve Django Ajax Call
+var displayingItemsNumber = 3
+var fromIndex = 0
+var toIndex = displayingItemsNumber
+var firstPage = true // TODO: UPDATED: I don't remember why I created firstPage and lastPage variables here
+var lastPage = true // It doesn't matter if it starts true or false, because the value will be assigned later
+function showPrevious(){
+  fromIndex-=displayingItemsNumber
+  toIndex-=displayingItemsNumber
+  while(toIndex-displayingItemsNumber!=fromIndex)
+    toIndex++
+  $.ajax({
+    url: "{% url 'crud_ajax_retrieve' %}",
+    data: {
+      'fromIndex' : fromIndex,
+      'toIndex' : toIndex,
+      dataType: 'json',
+    },
+    success: retrieveData
+  })
+}
+function showNext(){
+  fromIndex+=displayingItemsNumber
+  toIndex+=displayingItemsNumber
+  while(toIndex-displayingItemsNumber!=fromIndex)
+    toIndex++
+  $.ajax({
+    url: "{% url 'crud_ajax_retrieve' %}",
+    data: {
+      'fromIndex' : fromIndex,
+      'toIndex' : toIndex,
+      dataType: 'json',
+    },
+    success: retrieveData
+  })
+}
+
+function retrieveData(data) {
+  fromIndex = data.fromIndex
+  toIndex = data.toIndex
+  var users = []
+  let temp = JSON.parse(data.users)
+  for(let i=0;i<temp.length;i++){
+    let id = temp[i].pk
+    temp[i].fields.id = id
+    users.push(temp[i].fields);
+  }
+  $('#userTable tbody').empty()
+  for(let i=0;i<temp.length;i++){
+    appendToUserTable(users[i]);
+  }
+}
+
 </script>
 {% endblock javascript %}
